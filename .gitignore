@@ -1,3 +1,4 @@
+.idea/
 # Created by .ignore support plugin (hsz.mobi)
 ### CMake template
 CMakeCache.txt
@@ -63,3 +64,36 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
+/src/listdir.c
+/src/main.ev2.c
+/src/deps/file/package.json
+/src/small-test.c
+/src/array-heap.c
+/src/ssl-server.c
+/src/main.ev.c
+/src/main1.c
+/src/array-heap.h
+/src/main.ev_exec.c
+/src/deps/b64/package.json
+/src/ssl-example.c
+/src/deps/asprintf/package.json
+/src/main.list.c
+/src/bench.c
+cmake-build-debug/
+src/2
+src/array-heap.c
+src/array-heap.h
+src/bench.c
+src/deps/asprintf/package.json
+src/deps/b64/package.json
+src/deps/file/package.json
+src/deps/hash/
+src/listdir.c
+src/main.ev.c
+src/main.ev2.c
+src/main.ev_exec.c
+src/main.list.c
+src/main1.c
+src/small-test.c
+src/ssl-example.c
+src/ssl-server.c
