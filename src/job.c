@@ -9,13 +9,8 @@
 #include <stdio.h>
 #include <asm/errno.h>
 #include <errno.h>
+#include <fts.h>
 
-#include "asprintf/asprintf.h"
-#include "file/file.h"
-
-#include "list.h"
-#include "cJSON.h"
-#include "log.h"
 #include "job.h"
 
 
@@ -150,7 +145,7 @@ cJSON *convert_job2json(job_t *job) {
 	cJSON_AddStringToObject(j, "name", job->name);
 	cJSON_AddNumberToObject(j, "status", job->status);
 	cJSON_AddNumberToObject(j, "exit_code", job->exit_code);
-	cJSON *cmd = cJSON_CreateStringArray((const char **)job->cmd, get_cmd_array_size(job->cmd));
+	cJSON *cmd = cJSON_CreateStringArray((const char **) job->cmd, get_cmd_array_size(job->cmd));
 	cJSON_AddItemToObject(j, "cmd", cmd);
 	return j;
 }
@@ -189,7 +184,7 @@ int compare_strings(char *job_id, void *data) {
 	return !strcmp(job_id, data);
 }
 
-int listdir(char *path, int (*cb)(char *name, void *data), void *data) {
+int listdir(char *path, int (*cb)(char *name, void *_data), void *data) {
 //	size_t count = 0;
 //	static char *path = "/var/lib/netexec";
 
@@ -222,7 +217,7 @@ int listdir(char *path, int (*cb)(char *name, void *data), void *data) {
 }
 
 bool is_job_exists(char *id) {
-	return (bool)listdir("/var/lib/netexec/jobs", compare_strings, id);
+	return (bool) listdir("/var/lib/netexec/jobs", compare_strings, id);
 }
 
 int save_job(job_t *job) {
@@ -259,7 +254,7 @@ int save_job(job_t *job) {
 	cJSON_Delete(j);
 
 	/* Write j_str to file */
-	if (!file_write(path, j_str, O_CREAT|O_WRONLY, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP)) {
+	if (!file_write(path, j_str, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)) {
 		log_error("Can't write file: %s", path);
 		free(path);
 		free(j_str);
@@ -287,20 +282,89 @@ int load_job_cb(char *job_id, void *data) {
 }
 
 int load_all_jobs(list_t *job_list) {
-	return (bool)listdir("/var/lib/netexec/jobs", load_job_cb, job_list);
+	return (bool) listdir("/var/lib/netexec/jobs", load_job_cb, job_list);
 }
 
 bool is_job_in_list(list_t *job_list, char *id) {
 	list_t *pos;
 	list_for_each(pos, job_list) {
 //		log_debug("COMPARE: %s with %s", ((job_t*)(pos->data))->id, id);
-		if (!strcmp(((job_t*)(pos->data))->id, id)) {
+		if (!strcmp(((job_t *) (pos->data))->id, id)) {
 //			log_debug("COMPARE FOUND");
 			return true;
 		}
 	}
 	return false;
 }
+
+
+int recursive_delete(const char *dir) {
+	int ret = 0;
+	FTS *ftsp = NULL;
+	FTSENT *curr;
+
+	// Cast needed (in C) because fts_open() takes a "char * const *", instead
+	// of a "const char * const *", which is only allowed in C++. fts_open()
+	// does not modify the argument.
+	char *files[] = {(char *) dir, NULL};
+
+	// FTS_NOCHDIR  - Avoid changing cwd, which could cause unexpected behavior
+	//                in multithreaded programs
+	// FTS_PHYSICAL - Don't follow symlinks. Prevents deletion of files outside
+	//                of the specified directory
+	// FTS_XDEV     - Don't cross filesystem boundaries
+	ftsp = fts_open(files, FTS_NOCHDIR | FTS_PHYSICAL | FTS_XDEV, NULL);
+	if (!ftsp) {
+		log_error("%s: fts_open failed: %s\n", dir, strerror(errno));
+		ret = -1;
+		goto finish;
+	}
+
+	while ((curr = fts_read(ftsp))) {
+		switch (curr->fts_info) {
+			case FTS_NS:
+			case FTS_DNR:
+			case FTS_ERR:
+				log_error("%s: fts_read error: %s\n",
+					curr->fts_accpath, strerror(curr->fts_errno));
+				break;
+
+			case FTS_DC:
+			case FTS_DOT:
+			case FTS_NSOK:
+				// Not reached unless FTS_LOGICAL, FTS_SEEDOT, or FTS_NOSTAT were
+				// passed to fts_open()
+				break;
+
+			case FTS_D:
+				// Do nothing. Need depth-first search, so directories are deleted
+				// in FTS_DP
+				break;
+
+			case FTS_DP:
+			case FTS_F:
+			case FTS_SL:
+			case FTS_SLNONE:
+			case FTS_DEFAULT:
+				if (remove(curr->fts_accpath) < 0) {
+					log_error("%s: Failed to remove: %s\n",
+						curr->fts_path, strerror(errno));
+					ret = -1;
+				}
+				break;
+			default:
+				log_error("NONSENSE: reached default case value in fts_read");
+		}
+	}
+
+finish:
+	if (ftsp) {
+		fts_close(ftsp);
+	}
+
+	return ret;
+}
+
 /*
  /vat/lib/netexec/
 

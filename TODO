@@ -6,16 +6,14 @@
 
 - jsonrpc methods
 
-+ uuid run_job(base64_data)
+    + uuid run_job(base64_data)
+    + get_job(uuid)
+    + list_jobs()
 
-delete_job(uuid)
+    + delete_job(uuid)
+    - get_job_log(uuid, type)
 
-get_job(uuid)
-
-get_job_log(uuid, type)
-
-list_jobs()
-
+- job times
 
 - python lib
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <asprintf/asprintf.h>
+
 #include "stddef.h"
 #include "cJSON.h"
 #include "jsonrpc.h"
@@ -17,4 +19,9 @@
 	(jctx)->error_message = strdup(msg);
 
 
-cJSON *run_job(jrpc_context *jctx, cJSON *params, cJSON *id, void *data);
+cJSON *rpc_run_job(jrpc_context *jctx, cJSON *params, cJSON *id, void *data);
+cJSON *rpc_list_jobs(jrpc_context *jctx, cJSON *params, cJSON *id, void *data);
+cJSON *rpc_get_stats(jrpc_context *jctx, cJSON *params, cJSON *id, void *data);
+cJSON *rpc_get_job(jrpc_context *jctx, cJSON *params, cJSON *id, void *data);
+cJSON *rpc_get_job_log(jrpc_context *jctx, cJSON *params, cJSON *id, void *data);
+cJSON *rpc_delete_job(jrpc_context *jctx, cJSON *params, cJSON *id, void *data);

@@ -110,14 +110,18 @@ static inline void* list_pop(const list_t *list) {
 	return data;
 }
 
-static inline void list_remove_item(list_t *item, bool free_data) {
+static inline void list_remove_item(list_t *item, bool free_data, void (*cb)(void *data)) {
 	if (item && item->prev) {
 //		log_debug("remove item");
 		item->prev->next = item->next;
 		if (item->next)
 			item->next->prev = item->prev;
-		if (free_data)
-			free(item->data);
+		if (free_data) {
+			if (!cb)
+				free(item->data);
+			else
+				cb(item->data);
+		}
 		free(item);
 	}
 }

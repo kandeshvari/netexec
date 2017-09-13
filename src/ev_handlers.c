@@ -25,6 +25,7 @@ void free_ev_structs(struct ev_loop *loop, struct ev_io *watcher) {
 
 	// destroy ssl context and close socket
 	SSL_free(socks->ssl_sock);
+	ctx.total_clients--;
 	close(socks->sd);
 
 	free(watcher->data); // free sock_data structure
@@ -209,7 +210,7 @@ static void sigchild_cb(EV_P_ ev_child *w, int revents) {
 		close((int)(fw->w_stderr.data));
 
 		/* Remove filewatcher from list */
-		list_remove_item(pos, true);
+		list_remove_item(pos, true, NULL);
 	} else {
 		log_error("NONCENCE! Can't find watcher in proc_list");
 	}

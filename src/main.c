@@ -9,14 +9,9 @@
 
 #include "global.h"
 #include "log.h"
-#include "list.h"
-#include "ssl.h"
-//#include "cJSON.h"
 #include "job.h"
 #include "ev_handlers.h"
 #include "jrpc_methods.h"
-
-
 
 #define PORT_NO 3333
 
@@ -152,10 +147,13 @@ int main() {
 //	ev_timer_start(ctx.loop, &timeout_watcher);
 
 
-//	jrpc_register_procedure(say_hello, "sayHello", NULL, (char *[]) {"p1", "p2", "p3"}, 3);
-	jrpc_register_procedure(run_job, "run_job", NULL, (char *[]) {"id", "name", "cmd"}, 3);
+	jrpc_register_procedure(rpc_run_job, "run_job", NULL, (char *[]) {"id", "name", "cmd"}, 3);
+	jrpc_register_procedure(rpc_list_jobs, "list_jobs", NULL, (char *[]) {}, 0);
+	jrpc_register_procedure(rpc_get_stats, "get_stats", NULL, (char *[]) {}, 0);
+	jrpc_register_procedure(rpc_get_job, "get_job", NULL, (char *[]) {"id"}, 1);
+	jrpc_register_procedure(rpc_get_job_log, "get_job_log", NULL, (char *[]) {"id", "log_name"}, 2);
+	jrpc_register_procedure(rpc_delete_job, "delete_job", NULL, (char *[]) {"id"}, 1);
 //	jrpc_register_procedure(exit_server, "exit", NULL );
-
 
 	// now wait for events to arrive
 	ev_run(ctx.loop, 0);

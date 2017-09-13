@@ -63,7 +63,8 @@ set(SOURCE_FILES
         src/jrpc_methods.h
         )
 add_executable(netexec ${SOURCE_FILES} ${DEPS_SOURCE_FILES})
-target_link_libraries(netexec ${CMAKE_THREAD_LIBS_INIT} ${LIBEV_LDFLAGS} -lssl -lcrypto -lm)
+target_link_libraries(netexec ${LIBEV_LDFLAGS} -lssl -lcrypto -lm)
+#target_link_libraries(netexec ${CMAKE_THREAD_LIBS_INIT} ${LIBEV_LDFLAGS} -lssl -lcrypto -lm)
 
 # list
 set(LIST_SOURCE_FILES src/main.list.c src/log.h src/log.c src/list.h)
