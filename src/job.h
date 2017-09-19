@@ -28,7 +28,7 @@ typedef struct job {
 	char *name;
 	char **cmd;
 	status_t status;
-	int8_t exit_code;
+	int exit_code;
 } job_t;
 
 typedef struct job_sock {

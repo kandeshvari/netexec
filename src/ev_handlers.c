@@ -187,7 +187,7 @@ static void readfd_cb(EV_P_ ev_io *w, int revents) {
 
 static void sigchild_cb(EV_P_ ev_child *w, int revents) {
 	ev_child_stop(ctx.loop, w);
-	log_info("process %d exited with status %x", w->rpid, w->rstatus);
+	log_info("process %d exited with status %x", w->rpid, WEXITSTATUS(w->rstatus));
 	list_t *pos;
 	file_watcher_t *fw = NULL;
 
@@ -198,16 +198,15 @@ static void sigchild_cb(EV_P_ ev_child *w, int revents) {
 			break;
 	}
 	if (fw) {
-		log_info("[%d] Remove warcher from proc_list", fw->pid);
-		/* Close stdout log */
-		int s1 = (int)(fw->w_stdout.data);
-		char buf[1024] = {};
-		read(s1, buf, 1023);
-		log_debug("XXX: BUFFER: %s", buf);
-		close(s1);
+		log_info("[%d] Update job and remove warcher from proc_list", fw->pid);
+		job_t *job = w->data;
+		job->exit_code = WEXITSTATUS(w->rstatus);
+		job->status = w->rstatus ? FAILED : COMPLETE;
+		log_debug("Job update: status=%s exit_code=%d", status_str[job->status], job->exit_code);
 
-		/* Close stderr log */
-		close((int)(fw->w_stderr.data));
+		/* Update job on disk */
+		if (save_job(job))
+			log_error("Job saving failed");
 
 		/* Remove filewatcher from list */
 		list_remove_item(pos, true, NULL);
@@ -266,7 +265,6 @@ file_watcher_t *spawn_process(job_t *job) {
 			close(fd);
 
 		execv(job->cmd[0], job->cmd);
-		dprintf(STDERR_FILENO, "EXEC ERROR\n");
 		perror("exec error");
 		exit(-1);
 	} else {
@@ -308,6 +306,7 @@ file_watcher_t *spawn_process(job_t *job) {
 		ev_io_start(ctx.loop, &fw->w_stderr);
 
 		/* set event handler for catch sigchld */
+		*(&fw->w_child.data) = job;
 		ev_child_init (&fw->w_child, sigchild_cb, child_pid, 0);
 		ev_child_start(EV_DEFAULT_ &fw->w_child);
 

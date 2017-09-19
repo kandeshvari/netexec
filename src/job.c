@@ -250,7 +250,7 @@ int save_job(job_t *job) {
 	/* Get string representation of cJSON (config.json content) */
 	char *j_str = cJSON_Print(j);
 
-	/* We don't need cJSON anymore */
+	/* We don't need ``j`` anymore */
 	cJSON_Delete(j);
 
 	/* Write j_str to file */
