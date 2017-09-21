@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-
+#include <sys/resource.h>
 #include <ev.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -79,14 +79,14 @@ int server_init(int *sock) {
 
 	/* Create server socket */
 	if ((*sock = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
-		log_error("socket errror: %s",  strerror(errno));
+		log_error("socket errror: %s", strerror(errno));
 		return -1;
 	}
 
 	/* set REUSEADDR for socket */
 	int enable = 1;
 	if (setsockopt(*sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
-		log_error("setsockopt(SO_REUSEADDR) failed: %s",  strerror(errno));
+		log_error("setsockopt(SO_REUSEADDR) failed: %s", strerror(errno));
 
 	bzero(&addr, sizeof(addr));
 	addr.sin_family = AF_INET;
@@ -95,13 +95,13 @@ int server_init(int *sock) {
 
 	/* Bind socket to address */
 	if (bind(*sock, (struct sockaddr *) &addr, sizeof(addr)) != 0) {
-		log_error("bind error: %s",  strerror(errno));
+		log_error("bind error: %s", strerror(errno));
 		return -1;
 	}
 
 	/* Start listing on the socket */
 	if (listen(*sock, 2) < 0) {
-		log_error("listen error: %s",  strerror(errno));
+		log_error("listen error: %s", strerror(errno));
 		return -1;
 	}
 
@@ -112,8 +112,29 @@ int server_init(int *sock) {
 	return 0;
 }
 
+void init() {
+	const rlim_t kStackSize = 64L * 1024L * 1024L;   // min stack size = 64 Mb
+	struct rlimit rl;
+	int result;
+
+	result = getrlimit(RLIMIT_STACK, &rl);
+	log_info("Current stack size: %d", rl.rlim_cur);
+	if (result == 0) {
+		if (rl.rlim_cur < kStackSize) {
+			rl.rlim_cur = kStackSize;
+			result = setrlimit(RLIMIT_STACK, &rl);
+			if (result != 0) {
+				log_error("setrlimit returned result = %d\n", result);
+			}
+		}
+	}
+	log_info("Changed stack size: %d", rl.rlim_cur);
+}
+
 int main() {
 	int sd;
+
+	init();
 
 	// initialize context
 	ctx.loop = EV_DEFAULT;
@@ -151,9 +172,9 @@ int main() {
 	jrpc_register_procedure(rpc_list_jobs, "list_jobs", NULL, (char *[]) {}, 0);
 	jrpc_register_procedure(rpc_get_stats, "get_stats", NULL, (char *[]) {}, 0);
 	jrpc_register_procedure(rpc_get_job, "get_job", NULL, (char *[]) {"id"}, 1);
-	jrpc_register_procedure(rpc_get_job_log, "get_job_log", NULL, (char *[]) {"id", "log_name"}, 2);
+	jrpc_register_procedure(rpc_get_job_log, "get_job_log", NULL, (char *[]) {"id", "log_type"}, 2);
 	jrpc_register_procedure(rpc_delete_job, "delete_job", NULL, (char *[]) {"id"}, 1);
-//	jrpc_register_procedure(exit_server, "exit", NULL );
+	jrpc_register_procedure(rpc_shutdown_server, "shutdown_server", NULL, (char *[]) {}, 0);
 
 	// now wait for events to arrive
 	ev_run(ctx.loop, 0);
@@ -163,32 +184,32 @@ int main() {
 	list_free(ctx.proc_list, true, NULL);
 
 	log_debug("job_list length: %d", list_len(ctx.job_list));
-	list_free(ctx.job_list, true, (void(*)(void*))free_job);
+	list_free(ctx.job_list, true, (void (*)(void *)) free_job);
 
+	// TODO: move jrpc procs to static array
 	jrpc_deregister_procedure("run_job");
+	jrpc_deregister_procedure("list_jobs");
+	jrpc_deregister_procedure("get_stats");
+	jrpc_deregister_procedure("get_job");
+	jrpc_deregister_procedure("get_job_log");
+	jrpc_deregister_procedure("delete_job");
+	jrpc_deregister_procedure("shutdown_server");
 
+	log_debug("procedure_count: %d", ctx.jsonrpc.procedure_count);
+
+	cleanup_openssl();
 	// unloop was called, so exit
 	return 0;
 }
-//
-//
+
+
 //int main1() {
+//	char *X_tmp = NULL;
+//	char *resultX = (char *) malloc(0);
+//	X_tmp = realloc(resultX, 88);
+//	bzero(X_tmp, 88);
+//	printf("%x %x\n", (unsigned int) X_tmp, (unsigned int) resultX);
+//	free(X_tmp);
 //
-//	job_t *j = load_job("xxx1");
-//	if (!j) {
-//		log_error("Cant parse job");
-//		return -1;
-//	}
-//
-//	log_info("id: %s", j->id);
-//	log_info("name: %s", j->name);
-//	for (char **arg = j->cmd; *arg; arg++)
-//		log_info("arg: %s", *arg);
-//	log_info("status: %s", status_str[j->status]);
-//	log_info("exit_code: %d", j->exit_code);
-//
-//
-//
-//	free_job(j);
 //	return 0;
 //}

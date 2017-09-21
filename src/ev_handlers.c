@@ -24,7 +24,10 @@ void free_ev_structs(struct ev_loop *loop, struct ev_io *watcher) {
 	ev_io_stop(loop, watcher);
 
 	// destroy ssl context and close socket
+	SSL_shutdown(socks->ssl_sock);
+	SSL_shutdown(socks->ssl_sock);
 	SSL_free(socks->ssl_sock);
+	ERR_remove_state(0);
 	ctx.total_clients--;
 	close(socks->sd);
 

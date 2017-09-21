@@ -7,6 +7,8 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
+#include "global.h"
+
 int create_socket(int port);
 void init_openssl();
 void cleanup_openssl();

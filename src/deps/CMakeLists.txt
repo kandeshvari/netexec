@@ -1,4 +1,5 @@
 set(B64_SOURCE_FILES
+        ${CMAKE_CURRENT_LIST_DIR}/b64/b64.h
         ${CMAKE_CURRENT_LIST_DIR}/b64/decode.c
         ${CMAKE_CURRENT_LIST_DIR}/b64/encode.c
         )

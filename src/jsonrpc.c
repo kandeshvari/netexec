@@ -159,6 +159,7 @@ int jrpc_deregister_procedure(char *name) {
 				}
 				ctx.jsonrpc.procedures = ptr;
 			} else {
+				free(ctx.jsonrpc.procedures);
 				ctx.jsonrpc.procedures = NULL;
 			}
 		}

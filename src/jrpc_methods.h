@@ -1,12 +1,15 @@
 #pragma once
 
-#include <asprintf/asprintf.h>
+#include <stddef.h>
+#include <fcntl.h>
 
-#include "stddef.h"
+#include <asprintf/asprintf.h>
+#include <b64/b64.h>
+
+#include "log.h"
 #include "cJSON.h"
 #include "jsonrpc.h"
 #include "job.h"
-#include "log.h"
 #include "ev_handlers.h"
 
 
@@ -25,3 +28,4 @@ cJSON *rpc_get_stats(jrpc_context *jctx, cJSON *params, cJSON *id, void *data);
 cJSON *rpc_get_job(jrpc_context *jctx, cJSON *params, cJSON *id, void *data);
 cJSON *rpc_get_job_log(jrpc_context *jctx, cJSON *params, cJSON *id, void *data);
 cJSON *rpc_delete_job(jrpc_context *jctx, cJSON *params, cJSON *id, void *data);
+cJSON *rpc_shutdown_server(jrpc_context *jctx, cJSON *params, cJSON *id, void *data);

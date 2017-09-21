@@ -1,31 +1,6 @@
 #include "ssl.h"
 
-int create_socket(int port) {
-	int s;
-	struct sockaddr_in addr;
-
-	addr.sin_family = AF_INET;
-	addr.sin_port = htons(port);
-	addr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-	s = socket(AF_INET, SOCK_STREAM, 0);
-	if (s < 0) {
-		perror("Unable to create socket");
-		exit(EXIT_FAILURE);
-	}
-
-	if (bind(s, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-		perror("Unable to bind");
-		exit(EXIT_FAILURE);
-	}
-
-	if (listen(s, 1) < 0) {
-		perror("Unable to listen");
-		exit(EXIT_FAILURE);
-	}
-
-	return s;
-}
+extern ctx_t ctx;
 
 void init_openssl() {
 	SSL_load_error_strings();
@@ -33,7 +8,17 @@ void init_openssl() {
 }
 
 void cleanup_openssl() {
+//	CONF_modules_free();
+//	ENGINE_cleanup();
+//	CONF_modules_unload(1);
+	FIPS_mode_set(0);
+	CRYPTO_set_locking_callback(NULL);
+	CRYPTO_set_id_callback(NULL);
+	ERR_free_strings();
+	CRYPTO_cleanup_all_ex_data();
 	EVP_cleanup();
+	sk_SSL_COMP_free(SSL_COMP_get_compression_methods());
+	SSL_CTX_free(ctx.ssl_ctx);
 }
 
 SSL_CTX *create_context() {
